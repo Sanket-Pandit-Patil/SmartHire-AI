@@ -5,6 +5,7 @@ from utils.preprocess import clean_text
 from utils.skill_extractor import load_skills, extract_skills, get_skill_analysis
 from utils.matcher import (
     calculate_tfidf_similarity,
+    calculate_semantic_similarity,
     calculate_skill_match_score,
     calculate_final_score,
     get_score_label
@@ -17,18 +18,18 @@ st.set_page_config(
 )
 
 st.title("📄 SmartHire AI")
-st.subheader("Phase 3: Resume Parsing + Skill Extraction + Match Score")
+st.subheader("Phase 4: Resume Matching with Semantic Similarity")
 
 st.write(
     "Upload a resume PDF and paste a job description. "
-    "This phase extracts text, compares skills, and calculates a match score."
+    "This phase adds TF-IDF similarity, semantic similarity, and a combined AI-based match score."
 )
 
 # Sidebar
 st.sidebar.header("Instructions")
 st.sidebar.write("1. Upload your resume in PDF format.")
 st.sidebar.write("2. Paste the target job description.")
-st.sidebar.write("3. Click analyze to calculate skill and text match.")
+st.sidebar.write("3. Click analyze to calculate AI-based resume matching.")
 
 # Inputs
 uploaded_resume = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
@@ -71,10 +72,11 @@ if analyze_button:
                     # Step 5: Skill analysis
                     analysis = get_skill_analysis(resume_skills, jd_skills)
 
-                    # Step 6: ML-based scores
-                    text_similarity_score = calculate_tfidf_similarity(cleaned_resume, cleaned_jd)
+                    # Step 6: Scores
+                    tfidf_score = calculate_tfidf_similarity(cleaned_resume, cleaned_jd)
+                    semantic_score = calculate_semantic_similarity(cleaned_resume, cleaned_jd)
                     skill_match_score = calculate_skill_match_score(resume_skills, jd_skills)
-                    final_score = calculate_final_score(text_similarity_score, skill_match_score)
+                    final_score = calculate_final_score(tfidf_score, semantic_score, skill_match_score)
                     score_label = get_score_label(final_score)
 
                     st.success("Analysis completed successfully!")
@@ -87,15 +89,18 @@ if analyze_button:
                     st.progress(min(int(final_score), 100))
                     st.markdown(f"### {final_score}% — {score_label}")
 
-                    col_score1, col_score2, col_score3 = st.columns(3)
+                    col_score1, col_score2, col_score3, col_score4 = st.columns(4)
 
                     with col_score1:
-                        st.metric("Text Similarity", f"{text_similarity_score}%")
+                        st.metric("TF-IDF Score", f"{tfidf_score}%")
 
                     with col_score2:
-                        st.metric("Skill Match", f"{skill_match_score}%")
+                        st.metric("Semantic Score", f"{semantic_score}%")
 
                     with col_score3:
+                        st.metric("Skill Match", f"{skill_match_score}%")
+
+                    with col_score4:
                         st.metric("Final Score", f"{final_score}%")
 
                     # ---------------------------------------------------

@@ -1,17 +1,14 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from utils.embedding_model import model
+
+# Load embedding model once
+#embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 def calculate_tfidf_similarity(resume_text: str, jd_text: str) -> float:
     """
     Calculate TF-IDF cosine similarity between resume text and job description.
-
-    Args:
-        resume_text: cleaned resume text
-        jd_text: cleaned job description text
-
-    Returns:
-        similarity score as percentage
     """
     if not resume_text.strip() or not jd_text.strip():
         return 0.0
@@ -23,16 +20,22 @@ def calculate_tfidf_similarity(resume_text: str, jd_text: str) -> float:
     return round(similarity * 100, 2)
 
 
+def calculate_semantic_similarity(resume_text: str, jd_text: str) -> float:
+    """
+    Calculate semantic similarity using sentence embeddings.
+    """
+    if not resume_text.strip() or not jd_text.strip():
+        return 0.0
+
+    embeddings = model.encode([resume_text, jd_text])
+    similarity = cosine_similarity([embeddings[0]], [embeddings[1]])[0][0]
+
+    return round(similarity * 100, 2)
+
+
 def calculate_skill_match_score(resume_skills: list, jd_skills: list) -> float:
     """
     Calculate skill match percentage.
-
-    Args:
-        resume_skills: list of skills found in resume
-        jd_skills: list of skills found in job description
-
-    Returns:
-        skill match score as percentage
     """
     if not jd_skills:
         return 0.0
@@ -43,22 +46,16 @@ def calculate_skill_match_score(resume_skills: list, jd_skills: list) -> float:
     return round((matched_count / total_jd_skills) * 100, 2)
 
 
-def calculate_final_score(text_score: float, skill_score: float) -> float:
+def calculate_final_score(tfidf_score: float, semantic_score: float, skill_score: float) -> float:
     """
     Calculate final score using weighted average.
 
     Weights:
-    - text similarity: 50%
-    - skill match: 50%
-
-    Args:
-        text_score: TF-IDF similarity score
-        skill_score: skill match score
-
-    Returns:
-        final combined score
+    - TF-IDF score: 30%
+    - Semantic similarity: 40%
+    - Skill match score: 30%
     """
-    final_score = (0.5 * text_score) + (0.5 * skill_score)
+    final_score = (0.3 * tfidf_score) + (0.4 * semantic_score) + (0.3 * skill_score)
     return round(final_score, 2)
 
 
