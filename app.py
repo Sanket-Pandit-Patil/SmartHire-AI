@@ -3,7 +3,12 @@ import streamlit as st
 from utils.parser import extract_text_from_pdf
 from utils.preprocess import clean_text
 from utils.skill_extractor import load_skills, extract_skills, get_skill_analysis
-
+from utils.matcher import (
+    calculate_tfidf_similarity,
+    calculate_skill_match_score,
+    calculate_final_score,
+    get_score_label
+)
 
 st.set_page_config(
     page_title="SmartHire AI",
@@ -12,18 +17,18 @@ st.set_page_config(
 )
 
 st.title("📄 SmartHire AI")
-st.subheader("Phase 2: Resume Parsing + Skill Extraction")
+st.subheader("Phase 3: Resume Parsing + Skill Extraction + Match Score")
 
 st.write(
     "Upload a resume PDF and paste a job description. "
-    "This phase extracts text, cleans it, and compares skills."
+    "This phase extracts text, compares skills, and calculates a match score."
 )
 
 # Sidebar
 st.sidebar.header("Instructions")
 st.sidebar.write("1. Upload your resume in PDF format.")
 st.sidebar.write("2. Paste the target job description.")
-st.sidebar.write("3. Click analyze to extract and compare skills.")
+st.sidebar.write("3. Click analyze to calculate skill and text match.")
 
 # Inputs
 uploaded_resume = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
@@ -46,7 +51,7 @@ if analyze_button:
     else:
         try:
             with st.spinner("Processing resume and job description..."):
-                # Step 1: Extract raw resume text
+                # Step 1: Extract resume text
                 resume_text = extract_text_from_pdf(uploaded_resume)
 
                 if not resume_text.strip():
@@ -56,20 +61,45 @@ if analyze_button:
                     cleaned_resume = clean_text(resume_text)
                     cleaned_jd = clean_text(job_description)
 
-                    # Step 3: Load skills
+                    # Step 3: Load skill dictionary
                     skills_list = load_skills()
 
                     # Step 4: Extract skills
                     resume_skills = extract_skills(cleaned_resume, skills_list)
                     jd_skills = extract_skills(cleaned_jd, skills_list)
 
-                    # Step 5: Compare skills
+                    # Step 5: Skill analysis
                     analysis = get_skill_analysis(resume_skills, jd_skills)
+
+                    # Step 6: ML-based scores
+                    text_similarity_score = calculate_tfidf_similarity(cleaned_resume, cleaned_jd)
+                    skill_match_score = calculate_skill_match_score(resume_skills, jd_skills)
+                    final_score = calculate_final_score(text_similarity_score, skill_match_score)
+                    score_label = get_score_label(final_score)
 
                     st.success("Analysis completed successfully!")
 
                     # ---------------------------------------------------
-                    # Text Preview Section
+                    # Score Section
+                    # ---------------------------------------------------
+                    st.markdown("## Overall Match Score")
+
+                    st.progress(min(int(final_score), 100))
+                    st.markdown(f"### {final_score}% — {score_label}")
+
+                    col_score1, col_score2, col_score3 = st.columns(3)
+
+                    with col_score1:
+                        st.metric("Text Similarity", f"{text_similarity_score}%")
+
+                    with col_score2:
+                        st.metric("Skill Match", f"{skill_match_score}%")
+
+                    with col_score3:
+                        st.metric("Final Score", f"{final_score}%")
+
+                    # ---------------------------------------------------
+                    # Extracted Text Section
                     # ---------------------------------------------------
                     st.markdown("## Extracted Content")
 
@@ -77,22 +107,14 @@ if analyze_button:
 
                     with col1:
                         st.markdown("### Resume Text")
-                        st.text_area(
-                            "Resume Text",
-                            value=resume_text,
-                            height=300
-                        )
+                        st.text_area("Resume Text", value=resume_text, height=300)
 
                     with col2:
                         st.markdown("### Job Description")
-                        st.text_area(
-                            "Job Description Text",
-                            value=job_description,
-                            height=300
-                        )
+                        st.text_area("Job Description Text", value=job_description, height=300)
 
                     # ---------------------------------------------------
-                    # Skills Found Section
+                    # Skills Section
                     # ---------------------------------------------------
                     st.markdown("## Skills Found")
 
@@ -113,7 +135,7 @@ if analyze_button:
                             st.info("No known skills found in job description.")
 
                     # ---------------------------------------------------
-                    # Skill Comparison Section
+                    # Skill Comparison
                     # ---------------------------------------------------
                     st.markdown("## Skill Match Results")
 
@@ -141,7 +163,7 @@ if analyze_button:
                             st.info("No extra skills found.")
 
                     # ---------------------------------------------------
-                    # Metrics Section
+                    # Stats Section
                     # ---------------------------------------------------
                     st.markdown("## Quick Stats")
 
