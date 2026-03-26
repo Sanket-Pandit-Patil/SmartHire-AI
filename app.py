@@ -19,10 +19,15 @@ from utils.llm_engine import generate_llm_response
 from utils.rag import chunk_text, create_vector_store, retrieve_context
 
 st.set_page_config(
-    page_title="SmartHire AI System",
-    page_icon="📄",
+    page_title="SmartHire AI | Executive ATS",
+    page_icon="💎",
     layout="wide"
 )
+
+# Load custom CSS
+with open("style.css") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 
 # Initialize Session State
 if "candidates" not in st.session_state:
@@ -30,13 +35,9 @@ if "candidates" not in st.session_state:
 if "leaderboard_df" not in st.session_state:
     st.session_state["leaderboard_df"] = None
 
-st.title("📄 SmartHire AI: Enterprise ATS")
-st.subheader("Phase 6: Multi-Resume Ranking & Interactive Chatbot")
+st.markdown('<h1 class="main-header">SmartHire AI 💎</h1>', unsafe_allow_html=True)
+st.markdown('<p style="color: #94a3b8; font-size: 1.2rem; font-weight: 300; margin-bottom: 30px;">Next-Generation Enterprise Talent Acquisition & RAG Analysis</p>', unsafe_allow_html=True)
 
-st.write(
-    "Upload multiple resume PDFs and a target Job Description. The system will rank all candidates "
-    "on a leaderboard. Select a candidate to see deeper insights and chat with the AI about their resume."
-)
 
 # Sidebar
 st.sidebar.header("Job Configuration")
@@ -153,47 +154,99 @@ if analyze_button:
             st.session_state["leaderboard_df"] = df
             st.success("Analysis complete!")
 
-# UI Display
+# Leaderboard Section
 if st.session_state.get("leaderboard_df") is not None:
-    st.markdown("---")
-    st.markdown("## 🏆 Candidate Leaderboard")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 🏆 Global Candidate Ranking")
     st.dataframe(
         st.session_state["leaderboard_df"].style.background_gradient(cmap='Greens', subset=['Match Score']),
         use_container_width=True
     )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown("## 🔎 Deep Dive & Candidate Chat")
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 🔎 Deep Dive & Intel")
     
     candidate_names = list(st.session_state["candidates"].keys())
-    selected_candidate = st.selectbox("Select a candidate to review:", candidate_names)
+    selected_candidate = st.selectbox("Select Candidate Profile:", candidate_names)
+    st.markdown('</div>', unsafe_allow_html=True)
+
 
     if selected_candidate:
         data = st.session_state["candidates"][selected_candidate]
         
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.markdown(f"### {data['name']} - {data['final_score']}% ({data['label']})")
-        with col2:
-            st.metric("Skill Match", f"{data['skill_score']}%")
+        # Dashboard Overview Metrics
+        st.markdown(f"""
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin: 0; color: #f8fafc;">{data['name']}</h2>
+                        <span style="color: #6366f1; font-weight: 600;">{data['label']} Integration Analyst</span>
+                    </div>
+                    <div style="text-align: right;">
+                        <h1 style="margin: 0; color: #10b981; font-size: 3.5rem;">{data['final_score']}%</h1>
+                        <span style="color: #94a3b8; font-size: 0.9rem;">TOTAL MATCH SCORE</span>
+                    </div>
+                </div>
+                <div class="score-container">
+                    <div class="score-card">
+                        <div class="score-value">{data['skill_score']}%</div>
+                        <div class="score-label">Technical Skills</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value">{data['semantic']}%</div>
+                        <div class="score-label">Semantic Alignment</div>
+                    </div>
+                    <div class="score-card">
+                        <div class="score-value">{data['tfidf']}%</div>
+                        <div class="score-label">Keyword Match</div>
+                    </div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
             
         tabs = st.tabs(["📊 Evaluation", "💬 Ask AI (Chat)", "📄 Raw Extraction"])
         
         with tabs[0]:
-            st.markdown("#### Matched Skills")
-            st.success(", ".join(data["matched_skills"]) if data["matched_skills"] else "None")
-            st.markdown("#### Missing Skills")
-            st.error(", ".join(data["missing_skills"]) if data["missing_skills"] else "None")
+            col_match1, col_match2 = st.columns(2)
+            with col_match1:
+                st.markdown('<div class="glass-card" style="height: 100%;">', unsafe_allow_html=True)
+                st.markdown("#### ✅ Expert Skills Matched")
+                if data["matched_skills"]:
+                    badges = "".join([f'<span class="skill-badge skill-match">{s}</span>' for s in data["matched_skills"]])
+                    st.markdown(badges, unsafe_allow_html=True)
+                else:
+                    st.warning("No significant matches found.")
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown("#### AI Feedback")
-            st.info(data["feedback"])
+            with col_match2:
+                st.markdown('<div class="glass-card" style="height: 100%;">', unsafe_allow_html=True)
+                st.markdown("#### ❌ Critical Skills Missing")
+                if data["missing_skills"]:
+                    badges = "".join([f'<span class="skill-badge skill-missing">{s}</span>' for s in data["missing_skills"]])
+                    st.markdown(badges, unsafe_allow_html=True)
+                else:
+                    st.success("Perfect alignment! No skills missing.")
+                st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown("#### Suggested Interview Questions")
-            st.warning(data["interview"])
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("#### 🧠 AI Strategic Feedback")
+            st.markdown(f'<div style="color: #cbd5e1; line-height: 1.6;">{data["feedback"]}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("#### 🎤 Recommended Interview Track")
+            st.markdown(f'<div style="color: #cbd5e1; line-height: 1.6;">{data["interview"]}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
             
         with tabs[1]:
-            st.markdown("#### Chat with the Candidate's Resume (RAG)")
-            st.write("Ask anything about this candidate. The AI will search their resume chunks to answer.")
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("#### 💬 Interactive AI Dossier")
+            st.write("Inquire about specific experiences, project details, or cloud competency.")
+            st.markdown('</div>', unsafe_allow_html=True)
+
             
             chat_key = f"chat_{selected_candidate}"
             if chat_key not in st.session_state:
