@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 
 
 def load_skills(file_path: str = "data/skills.json") -> list:
@@ -37,7 +38,8 @@ def extract_skills(text: str, skills_list: list) -> list:
     found_skills = set()
 
     for skill in skills_list:
-        if skill.lower() in text:
+        pattern = r"\b" + re.escape(skill.lower()) + r"\b"
+        if re.search(pattern, text):
             found_skills.add(skill)
 
     return sorted(found_skills)

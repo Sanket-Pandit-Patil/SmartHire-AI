@@ -4,3 +4,7 @@ python-dotenv
 scikit-learn
 sentence-transformers
 torch
+requests
+groq
+faiss-cpu
+numpy
