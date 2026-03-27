@@ -4,7 +4,6 @@ def build_feedback_prompt(
     matched_skills,
     missing_skills,
     final_score,
-    tfidf_score,
     semantic_score,
     skill_match_score
 ):
@@ -26,7 +25,6 @@ Missing Skills:
 {missing_skills}
 
 Scores:
-- TF-IDF Score: {tfidf_score}%
 - Semantic Score: {semantic_score}%
 - Skill Match Score: {skill_match_score}%
 - Final Match Score: {final_score}%

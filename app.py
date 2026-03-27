@@ -9,7 +9,6 @@ from utils.parser import extract_text_from_pdf
 from utils.preprocess import clean_text
 from utils.skill_extractor import load_skills, extract_skills, get_skill_analysis
 from utils.matcher import (
-    calculate_tfidf_similarity,
     calculate_semantic_similarity,
     calculate_final_score,
     get_score_label
@@ -97,15 +96,14 @@ if analyze_button:
                 retrieved_chunks = retrieve_context(cleaned_jd, faiss_index, resume_chunks, top_k=5)
                 retrieved_context_str = "\n\n---\n\n".join(retrieved_chunks)
 
-                tfidf_score = calculate_tfidf_similarity(cleaned_resume, cleaned_jd)
                 semantic_score = calculate_semantic_similarity(cleaned_resume, cleaned_jd)
-                final_score = calculate_final_score(tfidf_score, semantic_score, skill_match_score)
+                final_score = calculate_final_score(semantic_score, skill_match_score)
                 score_label = get_score_label(final_score)
 
                 # Generate AI Feedback
                 feedback_prompt = build_feedback_prompt(
                     resume_skills, jd_skills, analysis["matched_skills"], analysis["missing_skills"],
-                    final_score, tfidf_score, semantic_score, skill_match_score
+                    final_score, semantic_score, skill_match_score
                 )
                 feedback_response = generate_llm_response(feedback_prompt)
 
@@ -120,7 +118,6 @@ if analyze_button:
                     "name": resume_file.name,
                     "final_score": final_score,
                     "label": score_label,
-                    "tfidf": tfidf_score,
                     "semantic": semantic_score,
                     "skill_score": skill_match_score,
                     "matched_skills": analysis["matched_skills"],
@@ -191,15 +188,11 @@ if st.session_state.get("leaderboard_df") is not None:
                 <div class="score-container">
                     <div class="score-card">
                         <div class="score-value">{data['skill_score']}%</div>
-                        <div class="score-label">Technical Skills</div>
+                        <div class="score-label">Technical Power</div>
                     </div>
                     <div class="score-card">
                         <div class="score-value">{data['semantic']}%</div>
                         <div class="score-label">Semantic Alignment</div>
-                    </div>
-                    <div class="score-card">
-                        <div class="score-value">{data['tfidf']}%</div>
-                        <div class="score-label">Keyword Match</div>
                     </div>
                 </div>
             </div>
